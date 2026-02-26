@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CodeShield — Analyze your source code for complexity and technical debt." />
+  <title>CodeShield — Source Code Analysis</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/index.css" />
+</head>
+
+<body>
+
+  <div id="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header__brand">
+        <img src="/favicon.svg" alt="CodeShield" class="header__logo" />
+        <div>
+          <div class="header__title">CodeShield</div>
+          <div class="header__subtitle">Source Code Analysis</div>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Drag-and-Drop Zone -->
+      <section>
+        <h2 class="section-title"><span class="section-title__icon"></span> Upload Source Files</h2>
+
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone__inner">
+            <span class="dropzone__icon"></span>
+            <div class="dropzone__title">Drag & drop source files here</div>
+            <div class="dropzone__subtitle">or use the actions below to select files or scan a directory</div>
+            <div class="dropzone__formats">
+              <span class="format-badge">.py</span>
+              <span class="format-badge">.java</span>
+              <span class="format-badge">.js</span>
+              <span class="format-badge">.cpp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-row">
+          <div class="action-card" id="btn-pick-files">
+            <span class="action-card__icon"></span>
+            <div class="action-card__text">
+              <h3>Select Files</h3>
+              <p>Choose individual source files</p>
+            </div>
+          </div>
+          <div class="action-card" id="btn-pick-dir">
+            <span class="action-card__icon"></span>
+            <div class="action-card__text">
+              <h3>Scan Directory</h3>
+              <p>Recursively scan a folder</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden inputs -->
+        <input type="file" id="file-input" multiple accept=".py,.java,.js,.cpp" hidden />
+        <input type="file" id="dir-input" webkitdirectory hidden />
+      </section>
+
+      <!-- File Queue -->
+      <section class="file-queue" id="file-queue-section" style="display:none;">
+        <div class="file-queue__header">
+          <h2 class="section-title"><span class="section-title__icon"></span> File Queue</h2>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span class="file-queue__count" id="file-count"></span>
+            <button class="file-queue__clear" id="btn-clear">Clear All</button>
+          </div>
+        </div>
+        <div class="file-queue__list" id="file-list"></div>
+      </section>
+
+      <!-- Submit -->
+      <div class="submit-area" id="submit-area" style="display:none;">
+        <div class="submit-area__summary" id="submit-summary"></div>
+        <button class="btn-scan" id="btn-scan" disabled>
+          Start Scan
+        </button>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
