@@ -254,11 +254,9 @@ function renderFileCard(f) {
     const langBadge = f.language
         ? `<span class="file-card__lang ${f.language.cssClass}">${f.language.name}</span>`
         : '';
-    const icon = f.language ? f.language.icon : '';
 
     return `
     <div class="file-card ${statusClass}">
-      <span class="file-card__icon">${icon}</span>
       <div class="file-card__info">
         <div class="file-card__name">${escapeHtml(f.name)}</div>
         <div class="file-card__meta">
@@ -285,19 +283,16 @@ function escapeHtml(str) {
 // Toast System
 
 function showToast(type, message) {
-    const icons = { success: '', error: '', warning: '', info: '' };
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
     toast.innerHTML = `
-    <span class="toast__icon">${icons[type] || ''}</span>
     <span class="toast__text">${escapeHtml(message)}</span>
   `;
     toastContainer.appendChild(toast);
 
     // Auto-dismiss after 4s
     setTimeout(() => {
-        toast.style.animation = 'toastOut 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
+        toast.remove();
     }, 4000);
 }
 
