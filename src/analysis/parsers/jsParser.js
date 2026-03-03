@@ -1,61 +1,39 @@
+// src/analysis/parsers/jsParser.js
+// Parses JavaScript/TypeScript source using Acorn and returns an array of
+// {name, complexity, loc} for each function/arrow expression/func decl.
+
 import { parse } from 'acorn';
-import * as walk from 'acorn-walk';
-import { complexityFromDecisions } from '../complexityCalculator.js';
+import { calculateComplexity } from '../complexityCalculator.js';
 
-/**
- * Analyze a JavaScript source string and return an object containing
- * per-function complexity and aggregate complexity for the file.
- */
-export function analyzeJavaScript(source, fileName = '') {
-    const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
-    const functions = [];
+export function parseJavaScript(code /* string */, filename = '<input>') {
+  const ast = parse(code, {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    locations: true,
+  });
+  const results = [];
 
-    // helper that counts decision points inside a node
-    function decisionCounter(node) {
-        let count = 0;
-        walk.simple(node, {
-            IfStatement() { count++; },
-            ForStatement() { count++; },
-            ForInStatement() { count++; },
-            ForOfStatement() { count++; },
-            WhileStatement() { count++; },
-            DoWhileStatement() { count++; },
-            SwitchCase(inner) { if (inner.test) count++; }, // skip default
-            ConditionalExpression() { count++; },
-            LogicalExpression(inner) {
-                if (inner.operator === '||' || inner.operator === '&&') count++; 
-            },
-            CatchClause() { count++; },
-        });
-        return count;
+  function walk(n) {
+    if (!n || typeof n !== 'object') return;
+
+    // capture function-like constructs
+    if (
+      n.type === 'FunctionDeclaration' ||
+      n.type === 'FunctionExpression' ||
+      n.type === 'ArrowFunctionExpression'
+    ) {
+      const name = n.id ? n.id.name : '<anonymous>';
+      const complexity = calculateComplexity(n.body);
+      results.push({ name, complexity, loc: n.loc });
     }
 
-    // gather all function-like nodes
-    walk.simple(ast, {
-        FunctionDeclaration(node) {
-            const name = node.id ? node.id.name : '<anonymous>';
-            const decisions = decisionCounter(node.body);
-            functions.push({ name, complexity: complexityFromDecisions(decisions) });
-        },
-        FunctionExpression(node) {
-            const name = node.id ? node.id.name : '<anonymous>';
-            const decisions = decisionCounter(node.body);
-            functions.push({ name, complexity: complexityFromDecisions(decisions) });
-        },
-        ArrowFunctionExpression(node) {
-            // arrow functions may have expression bodies
-            const name = '<arrow>'; 
-            const bodyNode = node.body.type === 'BlockStatement' ? node.body : { body: [node.body] };
-            const decisions = decisionCounter(bodyNode);
-            functions.push({ name, complexity: complexityFromDecisions(decisions) });
-        },
-        MethodDefinition(node) {
-            const name = node.key.name || '<method>';
-            const decisions = decisionCounter(node.value.body);
-            functions.push({ name, complexity: complexityFromDecisions(decisions) });
-        }
-    }, walk.base);
+    for (const key of Object.keys(n)) {
+      const child = n[key];
+      if (Array.isArray(child)) child.forEach(walk);
+      else walk(child);
+    }
+  }
 
-    const aggregate = functions.reduce((sum, fn) => sum + fn.complexity, 0);
-    return { file: fileName, functions, aggregate };
+  walk(ast);
+  return results;
 }

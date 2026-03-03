@@ -1,45 +1,56 @@
-import { describe, it, expect } from 'vitest';
-import { analyzeJavaScript } from '../src/analysis/parsers/jsParser.js';
-import { analyzePython } from '../src/analysis/parsers/pythonParser.js';
+// tests/complexity.test.js
+// Basic unit tests covering cyclomatic complexity calculation for several
+// languages and edge cases.
 
-describe('cyclomatic complexity analyzer', () => {
-    it('handles an empty file', () => {
-        const js = '';
-        const report = analyzeJavaScript(js, 'empty.js');
-        expect(report.functions.length).toBe(0);
-        expect(report.aggregate).toBe(0);
-    });
+import { calculateComplexity } from '../src/analysis/complexityCalculator.js';
+import { parseJavaScript } from '../src/analysis/parsers/jsParser.js';
+import { parsePython } from '../src/analysis/parsers/pythonParser.js';
+import { parseJava } from '../src/analysis/parsers/javaParser.js';
+import { parseCpp } from '../src/analysis/parsers/cppParser.js';
 
-    it('counts a simple function with one if', () => {
-        const js = `function foo(a) { if (a) { return 1; } }`;
-        const report = analyzeJavaScript(js, 'foo.js');
-        expect(report.functions[0].complexity).toBe(2); // 1 + one decision
-    });
+// Utility to run parser and return first function complexity
+function complexityOf(code, parser) {
+  const list = parser(code);
+  return list.length > 0 ? list[0].complexity : calculateComplexity({});
+}
 
-    it('counts logical operators inside a function', () => {
-        const js = `const x = (a && b) || c; function bar() { return x ? 1 : 2; }`;
-        const report = analyzeJavaScript(js, 'ops.js');
-        // the ternary and two logical ops are counted when they occur within the function body
-        expect(report.functions[0].complexity).toBe(2); // only the ternary inside bar
-    });
+test('JS simple if adds one', () => {
+  const code = 'function a(){ if(x){}}';
+  const fns = parseJavaScript(code);
+  expect(fns[0].complexity).toBe(2);
+});
 
-    it('finds multiple functions and sums aggregate', () => {
-        const js = `function a() { if(1){} } function b() { for(let i=0;i<1;i++){} }`;
-        const report = analyzeJavaScript(js, 'multi.js');
-        expect(report.functions.length).toBe(2);
-        expect(report.aggregate).toBe(2 + 2); // each has complexity 2
-    });
+test('JS nested loops increase complexity', () => {
+  const code = 'function b(){ for(;;){ while(1){} } }';
+  const fns = parseJavaScript(code);
+  expect(fns[0].complexity).toBe(3);
+});
 
-    it('parses a simple Python def with if/for', () => {
-        const py = `def f(x):\n    if x:\n        return 1\n    for i in range(3):\n        pass\n`;
-        const report = analyzePython(py, 'f.py');
-        expect(report.functions.length).toBe(1);
-        expect(report.functions[0].complexity).toBe(3); // 1 + if + for
-    });
+test('Python if and and/or counting', () => {
+  const code = `def foo():\n    if x and y or z:\n        pass`;
+  const fns = parsePython(code);
+  expect(fns[0].complexity).toBe(3); // 1 entry + if + logical op
+});
 
-    it('treats nested blocks correctly in Python', () => {
-        const py = `def g():\n    if True:\n        if False:\n            pass\n`;
-        const report = analyzePython(py, 'g.py');
-        expect(report.functions[0].complexity).toBe(3);
-    });
+test('Java method complexity', () => {
+  const code = `public class A {\n  void m(){ if(a){} else if(b){} }\n}`;
+  const fns = parseJava(code);
+  expect(fns[0].complexity).toBe(3);
+});
+
+test('C++ function with ternary and case', () => {
+  const code = `int f(){ switch(x){ case 1: break; } return y?1:0; }`;
+  const fns = parseCpp(code);
+  expect(fns[0].complexity).toBe(4); // entry + case + ternary + switch? (switch not counted separately)
+});
+
+test('Empty JS function should be complexity 1', () => {
+  const code = 'function empty(){}';
+  const fns = parseJavaScript(code);
+  expect(fns[0].complexity).toBe(1);
+});
+
+test('calculateComplexity handles raw AST node', () => {
+  const fake = { type: 'IfStatement', body: {} };
+  expect(calculateComplexity(fake)).toBe(2);
 });

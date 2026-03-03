@@ -1,49 +1,32 @@
-import { complexityFromDecisions } from '../complexityCalculator.js';
+// src/analysis/parsers/pythonParser.js
+// Uses a lightweight python-ast package to parse Python source into an AST.
+// The walker reuses the generic complexity calculator above.
 
-/**
- * Rough Python parser using indentation and simple keyword matching.
- * This is not a full AST; it's enough for cyclomatic complexity counting
- * for the purposes of Story 2.
- */
-export function analyzePython(source, fileName = '') {
-    const lines = source.split(/\r?\n/);
-    const functions = [];
-    let current = null;
-    let baseIndent = 0;
+import ast from 'python-ast';
+import { calculateComplexity } from '../complexityCalculator.js';
 
-    const decisionRegexp = /\b(if|for|while|elif|except|case|and|or|assert|with)\b|\?\:|&&|\|\|/g;
+export function parsePython(code /* string */) {
+  const tree = ast.parse(code);
+  const results = [];
 
-    for (let idx = 0; idx < lines.length; idx++) {
-        const line = lines[idx];
-        const defMatch = line.match(/^(\s*)def\s+([a-zA-Z0-9_]+)\s*\(/);
-        if (defMatch) {
-            // finish previous function (if any)
-            if (current) {
-                functions.push(current);
-            }
-            baseIndent = defMatch[1].length;
-            current = { name: defMatch[2], complexity: 1, start: idx + 1 };
-            continue;
-        }
-
-        if (current) {
-            const indent = (line.match(/^(\s*)/)[1] || '').length;
-            if (indent <= baseIndent && line.trim() !== '') {
-                // we've left the function block
-                functions.push(current);
-                current = null;
-                continue;
-            }
-            // count decisions in this line
-            let m;
-            while ((m = decisionRegexp.exec(line)) !== null) {
-                current.complexity++;
-            }
-        }
+  function visit(node) {
+    if (!node) return;
+    // function definitions in python
+    if (
+      node.constructor &&
+      (node.constructor.name === 'FunctionDef' || node.constructor.name === 'AsyncFunctionDef')
+    ) {
+      const name = node.name || '<anonymous>';
+      const complexity = calculateComplexity(node);
+      results.push({ name, complexity, lineno: node.lineno });
     }
-    if (current) {
-        functions.push(current);
+    for (const field in node) {
+      const child = node[field];
+      if (Array.isArray(child)) child.forEach(visit);
+      else if (typeof child === 'object') visit(child);
     }
-    const aggregate = functions.reduce((sum, fn) => sum + fn.complexity, 0);
-    return { file: fileName, functions, aggregate };
+  }
+
+  visit(tree);
+  return results;
 }

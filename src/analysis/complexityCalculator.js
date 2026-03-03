@@ -1,13 +1,50 @@
-/**
- * Basic cyclomatic complexity helper.
- * The formula M = E - N + 2P is equivalent to "1 + decision points"
- * when you treat P (connected components) as 1 and count each branch as
- * increasing the number of edges by one compared to nodes.  For the
- * purposes of this first story we simply expose a helper that takes the
- * number of decision points and returns the complexity value.
- */
+// src/analysis/complexityCalculator.js
+// Walks an AST node tree and counts decisions to compute cyclomatic complexity.
+// Works with JavaScript (Acorn) and Python (python-ast) AST nodes.
 
-export function complexityFromDecisions(decisions, exits = 1) {
-    // exits defaults to 1 (one entry point for a function)
-    return exits + decisions;
+export function calculateComplexity(node) {
+  let points = 0;
+
+  function walk(n) {
+    if (!n || typeof n !== 'object') return;
+    switch (n.type || n.constructor?.name) {
+      case 'IfStatement':
+      case 'ForStatement':
+      case 'WhileStatement':
+      case 'DoWhileStatement':
+      case 'ForInStatement':
+      case 'ForOfStatement':
+      case 'SwitchCase':
+      case 'CatchClause':
+      case 'ExceptHandler': // python-ast name for except
+        points++;
+        break;
+      case 'LogicalExpression':
+        if (n.operator === '&&' || n.operator === '||') points++;
+        break;
+      case 'ConditionalExpression':
+        points++;
+        break;
+      case 'If': // python ast.If
+      case 'For':
+      case 'While':
+      case 'With':
+        // python AST nodes use body but above cases capture them
+        points++;
+        break;
+    }
+
+    for (const key of Object.keys(n)) {
+      const child = n[key];
+      if (Array.isArray(child)) {
+        child.forEach(walk);
+      } else {
+        walk(child);
+      }
+    }
+  }
+
+  walk(node);
+  // formula M = 1 + decision points (assuming single entry P = 1)
+  return 1 + points;
 }
