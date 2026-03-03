@@ -11,9 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "acorn": "^8.10.0",
-    "python-ast": "^0.2.0",
-    "javaparser-javascript": "^3.25.2"
+    "acorn": "^8.10.0"
   },
   "devDependencies": {
     "vite": "^5.4.0",
