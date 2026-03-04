@@ -1,4 +1,4 @@
-
+import { analyzeAll } from './src/analysis/parserManager.js';
 
 // ── Constants 
 const ALLOWED_EXTENSIONS = ['.py', '.java', '.js', '.cpp'];
@@ -359,22 +359,26 @@ dirInput.addEventListener('change', () => {
 btnClear.addEventListener('click', clearQueue);
 
 // Start Scan
-btnScan.addEventListener('click', () => {
-    const validFiles = fileQueue.filter((f) => f.status === STATUS.VALID);
-    if (validFiles.length === 0) {
-        showToast('error', 'No valid files to scan.');
-        return;
-    }
+btnScan.addEventListener('click', async () => {
+  const validFiles = fileQueue.filter((f) => f.status === STATUS.VALID);
+  if (!validFiles.length) return;
 
-    // Placeholder: in Story 2 this will pipe into Parser Manager → Complexity Analyzer
-    showToast('success', `Scan initiated for ${validFiles.length} file${validFiles.length > 1 ? 's' : ''}. (Pipeline coming in Story 2)`);
+  btnScan.disabled = true;
+  btnScan.textContent = 'Scanning…';
 
-    // Log summary to console for development
-    console.group('CodeShield — Scan Submitted');
-    validFiles.forEach((f) => {
-        console.log(`  ${f.language?.name || '?'} | ${f.name} | ${f.lines} lines | ${f.sizeFormatted}`);
-    });
-    console.groupEnd();
+  try {
+    const { complexity, security } = await analyzeAll(validFiles);
+    renderScanResults(complexity, security); // your results UI function
+    const t = security.summary.totalFindings;
+    showToast(t > 0 ? 'error' : 'success',
+      t > 0
+        ? `${t} security finding(s) detected across ${validFiles.length} file(s).`
+        : `No vulnerabilities found in ${validFiles.length} file(s).`
+    );
+  } finally {
+    btnScan.disabled = false;
+    btnScan.textContent = 'Start Scan';
+  }
 });
 
 // Prevent default browser file drop
