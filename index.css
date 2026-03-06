@@ -350,3 +350,361 @@ body {
   background: rgba(0, 89, 156, 0.2);
   color: #38bdf8;
 }
+
+/* ── Results Section ── */
+.results-section {
+  margin-top: 32px;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.results-close {
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid #4b5563;
+  border-radius: var(--radius);
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.results-close:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.results-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.summary-stat {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.summary-stat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: block;
+}
+
+.summary-stat__label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  display: block;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border-left: 4px solid transparent;
+  padding: 16px;
+}
+
+.result-card--low {
+  border-left-color: var(--success);
+}
+
+.result-card--medium {
+  border-left-color: var(--warning);
+}
+
+.result-card--high {
+  border-left-color: #f97316;
+}
+
+.result-card--critical {
+  border-left-color: var(--error);
+}
+
+.result-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.result-card__file {
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.result-card__tdi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tdi-score {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.tdi-score--low {
+  color: var(--success);
+}
+
+.tdi-score--medium {
+  color: var(--warning);
+}
+
+.tdi-score--high {
+  color: #f97316;
+}
+
+.tdi-score--critical {
+  color: var(--error);
+}
+
+.risk-flag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+}
+
+.result-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metric {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.metric__value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.result-card__functions {
+  margin-top: 8px;
+}
+
+.fn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.fn-table th {
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 4px 8px;
+  border-bottom: 1px solid #374151;
+}
+
+.fn-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #1f2937;
+  font-family: monospace;
+}
+
+.fn-table tr:last-child td {
+  border-bottom: none;
+}
+
+.risk-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.risk-badge--low {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.risk-badge--medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.risk-badge--high {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+}
+
+.risk-badge--critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+.vulns-list {
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.vuln-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 8px;
+  color: var(--text-secondary);
+}
+
+.vuln-item__pattern {
+  font-family: monospace;
+}
+
+.vuln-severity {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.vuln-severity--critical {
+  color: var(--error);
+}
+
+.vuln-severity--high {
+  color: #f97316;
+}
+
+.vuln-severity--medium {
+  color: var(--warning);
+}
+
+.vuln-severity--low {
+  color: var(--text-secondary);
+}
+
+/* ── Settings Section ── */
+.settings-section {
+  margin-top: 24px;
+}
+
+.settings-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid #333;
+}
+
+.settings-toggle:hover {
+  border-color: var(--accent);
+}
+
+.settings-toggle__arrow {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.settings-toggle__arrow--open {
+  transform: rotate(180deg);
+}
+
+.settings-body {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid #333;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.setting-field__label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.setting-field__input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid #4b5563;
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.setting-field__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.setting-field__input:invalid {
+  border-color: var(--error);
+}
+
+.setting-field__help {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-settings {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.btn-settings--save {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-settings--save:hover {
+  opacity: 0.9;
+}
+
+.btn-settings--reset {
+  background: none;
+  color: var(--text-secondary);
+  border: 1px solid #4b5563;
+}
+
+.btn-settings--reset:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
