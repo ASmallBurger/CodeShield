@@ -1,4 +1,4 @@
-import { analyzeAll } from './src/analysis/parserManager.js';
+
 
 // ── Constants 
 const ALLOWED_EXTENSIONS = ['.py', '.java', '.js', '.cpp'];
@@ -35,7 +35,94 @@ const btnClear = $('#btn-clear');
 const submitArea = $('#submit-area');
 const submitSummary = $('#submit-summary');
 const btnScan = $('#btn-scan');
+const resultsSection = $('#results-section');
+const resultsList = $('#results-list');
+const resultsSummary = $('#results-summary');
+const btnCloseResults = $('#btn-close-results');
 const toastContainer = $('#toast-container');
+
+// Settings DOM refs
+const settingsSection = $('#settings-section');
+const settingsToggle = $('#settings-toggle');
+const settingsArrow = $('#settings-arrow');
+const settingsBody = $('#settings-body');
+const inputTdiThreshold = $('#input-tdi-threshold');
+const inputComplexityThreshold = $('#input-complexity-threshold');
+const inputVulnThreshold = $('#input-vuln-threshold');
+const btnSaveSettings = $('#btn-save-settings');
+const btnResetSettings = $('#btn-reset-settings');
+
+// ── Settings ──
+const SETTINGS_KEY = 'codeshield_settings';
+const DEFAULT_SETTINGS = { tdiThreshold: 50, complexityThreshold: 10, vulnDensityThreshold: 20 };
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) {
+            const saved = JSON.parse(raw);
+            return { ...DEFAULT_SETTINGS, ...saved };
+        }
+    } catch { /* ignore corrupt data */ }
+    return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings(settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function applySettingsToUI(settings) {
+    inputTdiThreshold.value = settings.tdiThreshold;
+    inputComplexityThreshold.value = settings.complexityThreshold;
+    inputVulnThreshold.value = settings.vulnDensityThreshold;
+}
+
+function readSettingsFromUI() {
+    const tdi = parseInt(inputTdiThreshold.value, 10);
+    const complexity = parseInt(inputComplexityThreshold.value, 10);
+    const vuln = parseInt(inputVulnThreshold.value, 10);
+
+    // Validation
+    const errors = [];
+    if (isNaN(tdi) || tdi < 1 || tdi > 200) errors.push('TDI threshold must be 1-200');
+    if (isNaN(complexity) || complexity < 1 || complexity > 100) errors.push('Complexity threshold must be 1-100');
+    if (isNaN(vuln) || vuln < 1 || vuln > 500) errors.push('Vuln density threshold must be 1-500');
+
+    if (errors.length > 0) {
+        errors.forEach((e) => showToast('error', e));
+        return null;
+    }
+
+    return { tdiThreshold: tdi, complexityThreshold: complexity, vulnDensityThreshold: vuln };
+}
+
+// Load saved settings on startup
+let currentSettings = loadSettings();
+applySettingsToUI(currentSettings);
+
+// Settings toggle
+settingsToggle.addEventListener('click', () => {
+    const open = settingsBody.style.display !== 'none';
+    settingsBody.style.display = open ? 'none' : '';
+    settingsArrow.classList.toggle('settings-toggle__arrow--open', !open);
+});
+
+// Save settings
+btnSaveSettings.addEventListener('click', () => {
+    const settings = readSettingsFromUI();
+    if (!settings) return;
+    currentSettings = settings;
+    saveSettings(settings);
+    showToast('success', 'Settings saved.');
+});
+
+// Reset settings
+btnResetSettings.addEventListener('click', () => {
+    currentSettings = { ...DEFAULT_SETTINGS };
+    applySettingsToUI(currentSettings);
+    saveSettings(currentSettings);
+    showToast('info', 'Settings reset to defaults.');
+});
 
 // Language Detector
 function getExtension(filename) {
@@ -218,6 +305,7 @@ function renderQueue() {
     const hasFiles = fileQueue.length > 0;
     fileQueueSec.style.display = hasFiles ? '' : 'none';
     submitArea.style.display = hasFiles ? '' : 'none';
+    settingsSection.style.display = hasFiles ? '' : 'none';
 
     if (!hasFiles) {
         fileListEl.innerHTML = '';
@@ -359,26 +447,22 @@ dirInput.addEventListener('change', () => {
 btnClear.addEventListener('click', clearQueue);
 
 // Start Scan
-btnScan.addEventListener('click', async () => {
-  const validFiles = fileQueue.filter((f) => f.status === STATUS.VALID);
-  if (!validFiles.length) return;
+btnScan.addEventListener('click', () => {
+    const validFiles = fileQueue.filter((f) => f.status === STATUS.VALID);
+    if (validFiles.length === 0) {
+        showToast('error', 'No valid files to scan.');
+        return;
+    }
 
-  btnScan.disabled = true;
-  btnScan.textContent = 'Scanning…';
+    // Placeholder: in Story 2 this will pipe into Parser Manager → Complexity Analyzer
+    showToast('success', `Scan initiated for ${validFiles.length} file${validFiles.length > 1 ? 's' : ''}. (Pipeline coming in Story 2)`);
 
-  try {
-    const { complexity, security } = await analyzeAll(validFiles);
-    renderScanResults(complexity, security); // your results UI function
-    const t = security.summary.totalFindings;
-    showToast(t > 0 ? 'error' : 'success',
-      t > 0
-        ? `${t} security finding(s) detected across ${validFiles.length} file(s).`
-        : `No vulnerabilities found in ${validFiles.length} file(s).`
-    );
-  } finally {
-    btnScan.disabled = false;
-    btnScan.textContent = 'Start Scan';
-  }
+    // Log summary to console for development
+    console.group('CodeShield — Scan Submitted');
+    validFiles.forEach((f) => {
+        console.log(`  ${f.language?.name || '?'} | ${f.name} | ${f.lines} lines | ${f.sizeFormatted}`);
+    });
+    console.groupEnd();
 });
 
 // Prevent default browser file drop

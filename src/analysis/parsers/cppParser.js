@@ -19,12 +19,10 @@ export function parseCpp(code /* string */) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (braceDepth === 0) {
-      // simplistic: look for return type + name + parens then brace
-      const m = line.match(/\b([\w:\*<>&]+\s+)+([\w_]+)\s*\([^)]*\)\s*\{/);
+      // match: [return_type] function_name ( params ) {
+      const m = line.match(/(\w+)\s*\([^)]*\)\s*\{/);
       if (m) {
-        current = { name: m[2], complexity: 1, start: i + 1 };
-        braceDepth = 1;
-        continue;
+        current = { name: m[1], complexity: 1, start: i + 1 };
       }
     }
     if (current) {

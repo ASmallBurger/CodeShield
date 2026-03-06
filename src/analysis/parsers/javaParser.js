@@ -20,12 +20,9 @@ export function parseJava(code /* string */) {
     const line = lines[i];
     // try to detect a method signature when not already inside one
     if (braceDepth === 0) {
-      const m = line.match(/\b([\w<>\[\]]+\s+)+([\w_]+)\s*\([^)]*\)\s*\{/);
+      const m = line.match(/(\w+)\s*\([^)]*\)\s*\{/);
       if (m) {
-        current = { name: m[2], complexity: 1, start: i + 1 };
-        braceDepth = 1;
-        // count decisions in the signature itself (generics/conditions unlikely)
-        continue;
+        current = { name: m[1], complexity: 1, start: i + 1 };
       }
     }
 
@@ -33,7 +30,7 @@ export function parseJava(code /* string */) {
       current.complexity += countPoints(line);
     }
 
-    // update brace depth after counting to ensure we close when appropriate
+    // update brace depth by scanning the line
     for (const ch of line) {
       if (ch === '{') braceDepth++;
       else if (ch === '}') braceDepth--;

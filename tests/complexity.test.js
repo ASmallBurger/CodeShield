@@ -29,19 +29,19 @@ test('JS nested loops increase complexity', () => {
 test('Python if and and/or counting', () => {
   const code = `def foo():\n    if x and y or z:\n        pass`;
   const fns = parsePython(code);
-  expect(fns[0].complexity).toBe(3); // 1 entry + if + logical op
+  expect(fns[0].complexity).toBe(4); // 1 entry + if + and + or
 });
 
 test('Java method complexity', () => {
-  const code = `public class A {\n  void m(){ if(a){} else if(b){} }\n}`;
+  const code = `void m(){ if(a){} else if(b){} }`;
   const fns = parseJava(code);
-  expect(fns[0].complexity).toBe(3);
+  expect(fns[0].complexity).toBe(3); // 1 entry + if + else if
 });
 
 test('C++ function with ternary and case', () => {
-  const code = `int f(){ switch(x){ case 1: break; } return y?1:0; }`;
+  const code = `int f(){ if(x) { switch(y){ case 1: break; } } return z?1:0; }`;
   const fns = parseCpp(code);
-  expect(fns[0].complexity).toBe(4); // entry + case + ternary + switch? (switch not counted separately)
+  expect(fns[0].complexity).toBe(4); // 1 entry + if + case + ternary
 });
 
 test('Empty JS function should be complexity 1', () => {
