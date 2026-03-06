@@ -3,6 +3,7 @@ import { analyzeFiles } from './src/analysis/parserManager.js';
 import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
 import { computeTDIReport } from './src/analysis/tdiCalculator.js';
 
+
 // ── Constants 
 const ALLOWED_EXTENSIONS = ['.py', '.java', '.js', '.cpp'];
 const MAX_LINES = 10_000;
@@ -457,15 +458,12 @@ btnScan.addEventListener('click', async () => {
         return;
     }
 
-    // Disable button during scan
     btnScan.disabled = true;
     btnScan.textContent = 'Scanning...';
 
     try {
-        // Run complexity analysis
         const analysisResults = await analyzeFiles(validFiles);
 
-        // Run vulnerability scanning and attach results
         const modules = [];
         for (const result of analysisResults) {
             const queueEntry = validFiles.find((f) => f.name === result.file);
@@ -481,10 +479,7 @@ btnScan.addEventListener('click', async () => {
             });
         }
 
-        // Compute TDI report (ranked by TDI descending)
         const tdiReport = computeTDIReport(modules, currentSettings.tdiThreshold);
-
-        // Render results
         renderResults(tdiReport);
         showToast('success', `Scan complete: ${tdiReport.length} file${tdiReport.length > 1 ? 's' : ''} analyzed.`);
     } catch (err) {
@@ -496,10 +491,7 @@ btnScan.addEventListener('click', async () => {
     }
 });
 
-// Close Results
-btnCloseResults.addEventListener('click', () => {
-    resultsSection.style.display = 'none';
-});
+
 
 // ── Results Renderer ──
 
