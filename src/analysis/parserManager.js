@@ -6,6 +6,8 @@ import { parseJavaScript } from './parsers/jsParser.js';
 import { parsePython } from './parsers/pythonParser.js';
 import { parseJava } from './parsers/javaParser.js';
 import { parseCpp } from './parsers/cppParser.js';
+import { scanFiles } from './securityScanner.js';
+
 
 const parsers = {
   '.js': parseJavaScript,
@@ -49,4 +51,12 @@ function countPoints(text) {
   const logical = text.match(/&&|\|\|/g) || [];
   const ternary = text.match(/\?/g) || [];
   return 1 + decisions.length + logical.length + ternary.length;
+}
+
+export async function analyzeAll(files) {
+  const [complexity, security] = await Promise.all([
+    analyzeFiles(files),
+    scanFiles(files),
+  ]);
+  return { complexity, security };
 }

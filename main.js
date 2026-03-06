@@ -1,7 +1,4 @@
 
-import { analyzeFiles } from './src/analysis/parserManager.js';
-import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
-import { computeTDIReport } from './src/analysis/tdiCalculator.js';
 
 // ── Constants 
 const ALLOWED_EXTENSIONS = ['.py', '.java', '.js', '.cpp'];
@@ -450,141 +447,23 @@ dirInput.addEventListener('change', () => {
 btnClear.addEventListener('click', clearQueue);
 
 // Start Scan
-btnScan.addEventListener('click', async () => {
+btnScan.addEventListener('click', () => {
     const validFiles = fileQueue.filter((f) => f.status === STATUS.VALID);
     if (validFiles.length === 0) {
         showToast('error', 'No valid files to scan.');
         return;
     }
 
-    // Disable button during scan
-    btnScan.disabled = true;
-    btnScan.textContent = 'Scanning...';
+    // Placeholder: in Story 2 this will pipe into Parser Manager → Complexity Analyzer
+    showToast('success', `Scan initiated for ${validFiles.length} file${validFiles.length > 1 ? 's' : ''}. (Pipeline coming in Story 2)`);
 
-    try {
-        // Run complexity analysis
-        const analysisResults = await analyzeFiles(validFiles);
-
-        // Run vulnerability scanning and attach results
-        const modules = [];
-        for (const result of analysisResults) {
-            const queueEntry = validFiles.find((f) => f.name === result.file);
-            const code = queueEntry ? await queueEntry.file.text() : '';
-            const ext = getExtension(result.file);
-            const { vulnerabilities, count } = scanVulnerabilities(code, ext);
-
-            modules.push({
-                ...result,
-                code,
-                vulnCount: count,
-                vulnerabilities,
-            });
-        }
-
-        // Compute TDI report (ranked by TDI descending)
-        const tdiReport = computeTDIReport(modules, currentSettings.tdiThreshold);
-
-        // Render results
-        renderResults(tdiReport);
-        showToast('success', `Scan complete: ${tdiReport.length} file${tdiReport.length > 1 ? 's' : ''} analyzed.`);
-    } catch (err) {
-        console.error('CodeShield scan error:', err);
-        showToast('error', `Scan failed: ${err.message}`);
-    } finally {
-        btnScan.disabled = false;
-        btnScan.textContent = 'Start Scan';
-    }
+    // Log summary to console for development
+    console.group('CodeShield — Scan Submitted');
+    validFiles.forEach((f) => {
+        console.log(`  ${f.language?.name || '?'} | ${f.name} | ${f.lines} lines | ${f.sizeFormatted}`);
+    });
+    console.groupEnd();
 });
-
-// Close Results
-btnCloseResults.addEventListener('click', () => {
-    resultsSection.style.display = 'none';
-});
-
-// ── Results Renderer ──
-
-function renderResults(report) {
-    resultsSection.style.display = '';
-
-    // Summary stats
-    const totalFiles = report.length;
-    const totalFunctions = report.reduce((s, r) => s + r.functionCount, 0);
-    const avgTDI = totalFiles > 0 ? (report.reduce((s, r) => s + r.tdi, 0) / totalFiles) : 0;
-    const flaggedCount = report.filter((r) => r.flagged).length;
-
-    resultsSummary.innerHTML = `
-        <div class="summary-stat">
-            <span class="summary-stat__value">${totalFiles}</span>
-            <span class="summary-stat__label">Files Analyzed</span>
-        </div>
-        <div class="summary-stat">
-            <span class="summary-stat__value">${totalFunctions}</span>
-            <span class="summary-stat__label">Functions Found</span>
-        </div>
-        <div class="summary-stat">
-            <span class="summary-stat__value ${avgTDI > 50 ? 'tdi-score--critical' : avgTDI > 25 ? 'tdi-score--medium' : 'tdi-score--low'}">${avgTDI.toFixed(2)}</span>
-            <span class="summary-stat__label">Avg TDI</span>
-        </div>
-        <div class="summary-stat">
-            <span class="summary-stat__value" style="color:${flaggedCount > 0 ? 'var(--error)' : 'var(--success)'}">${flaggedCount}</span>
-            <span class="summary-stat__label">High-Risk Modules</span>
-        </div>
-    `;
-
-    // File cards (already ranked by TDI descending)
-    resultsList.innerHTML = report.map((r) => renderResultCard(r)).join('');
-
-    // Scroll to results
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
-}
-
-function renderResultCard(r) {
-    const riskClass = r.riskLevel.toLowerCase();
-
-    // Function table rows
-    const fnRows = r.functions.map((fn) => {
-        const fnRisk = getFnRiskLevel(fn.complexity);
-        const fnRiskClass = fnRisk.toLowerCase();
-        return `
-            <tr>
-                <td>${escapeHtml(fn.name)}</td>
-                <td>${fn.complexity}</td>
-                <td><span class="risk-badge risk-badge--${fnRiskClass}">${fnRisk}</span></td>
-            </tr>`;
-    }).join('');
-
-    return `
-    <div class="result-card result-card--${riskClass}">
-        <div class="result-card__header">
-            <span class="result-card__file">${escapeHtml(r.file)}</span>
-            <div class="result-card__tdi">
-                ${r.flagged ? '<span class="risk-flag">High Risk</span>' : ''}
-                <span class="tdi-score tdi-score--${riskClass}">TDI: ${r.tdi.toFixed(2)}</span>
-            </div>
-        </div>
-        <div class="result-card__metrics">
-            <div class="metric">LOC: <span class="metric__value">${r.loc}</span></div>
-            <div class="metric">Complexity: <span class="metric__value">${r.aggregateComplexity}</span></div>
-            <div class="metric">Vulnerabilities: <span class="metric__value">${r.vulnCount}</span></div>
-            <div class="metric">Vuln Density: <span class="metric__value">${r.vulnDensity.toFixed(2)}</span></div>
-        </div>
-        ${r.functions.length > 0 ? `
-        <div class="result-card__functions">
-            <table class="fn-table">
-                <thead><tr><th>Function</th><th>Complexity</th><th>Risk</th></tr></thead>
-                <tbody>${fnRows}</tbody>
-            </table>
-        </div>` : ''}
-    </div>`;
-}
-
-function getFnRiskLevel(complexity) {
-    const t = currentSettings.complexityThreshold;
-    if (complexity <= t * 0.5) return 'Low';
-    if (complexity <= t) return 'Medium';
-    if (complexity <= t * 2) return 'High';
-    return 'Critical';
-}
 
 // Prevent default browser file drop
 document.addEventListener('dragover', (e) => e.preventDefault());
