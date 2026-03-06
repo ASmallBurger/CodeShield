@@ -1,8 +1,3 @@
-
-import { analyzeFiles } from './src/analysis/parserManager.js';
-import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
-import { computeTDIReport } from './src/analysis/tdiCalculator.js';
-
 import { analyzeFiles } from './src/analysis/parserManager.js';
 import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
 import { computeTDIReport } from './src/analysis/tdiCalculator.js';
