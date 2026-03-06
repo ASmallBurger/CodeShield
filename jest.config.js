@@ -1,5 +1,6 @@
 // jest.config.js
 export default {
   testEnvironment: 'node',
-  transform: {}
+  transform: {},
+  testMatch: ['**/tests/**/*.test.js']
 };
