@@ -24,7 +24,8 @@ export function parseJavaScript(code /* string */, filename = '<input>') {
     ) {
       const name = n.id ? n.id.name : '<anonymous>';
       const complexity = calculateComplexity(n.body);
-      results.push({ name, complexity, loc: n.loc });
+      // startLine is 1-indexed, sourced from acorn's location info
+      results.push({ name, complexity, startLine: n.loc.start.line });
     }
 
     for (const key of Object.keys(n)) {

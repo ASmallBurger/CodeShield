@@ -36,7 +36,8 @@ export function parsePython(code /* string */) {
         }
       }
 
-      results.push({ name, complexity: Math.max(1, complexity) });
+      // i is 0-indexed; startLine is 1-indexed to match other parsers
+      results.push({ name, complexity: Math.max(1, complexity), startLine: i + 1 });
     }
   }
 
