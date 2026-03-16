@@ -22,7 +22,7 @@ export function parseCpp(code /* string */) {
       // match: [return_type] function_name ( params ) {
       const m = line.match(/(\w+)\s*\([^)]*\)\s*\{/);
       if (m) {
-        current = { name: m[1], complexity: 1, start: i + 1 };
+        current = { name: m[1], complexity: 1, startLine: i + 1 };
       }
     }
     if (current) {

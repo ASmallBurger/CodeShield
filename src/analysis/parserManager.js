@@ -1,6 +1,6 @@
 // src/analysis/parserManager.js
-// Top-level entrypoint for analyzing a batch of files.
-// Delegates to language-specific parsers and aggregates the results.
+// top level entrypoint for analyzing a batch of files.
+// delegates to language-specific parsers and aggregates the results.
 
 import { parseJavaScript } from './parsers/jsParser.js';
 import { parsePython } from './parsers/pythonParser.js';
@@ -31,14 +31,15 @@ export async function analyzeFiles(files) {
     try {
       functions = parser(text, f.name);
     } catch (err) {
-      // if parsing fails, treat whole file as one blob
+      // if parsing fails, treat whole file as one thingy
       console.warn(`parser failed for ${f.name}`, err);
       const totalPoints = countPoints(text);
       functions = [{ name: '<parse error>', complexity: totalPoints }];
     }
 
     const aggregate = functions.reduce((sum, fn) => sum + (fn.complexity || 0), 0);
-    results.push({ file: f.name, functions, aggregate });
+    // sourceLines is kept so the UI can render code snippets with context
+    results.push({ file: f.name, functions, aggregate, sourceLines: text.split(/\r?\n/) });
   }
 
   return results;
