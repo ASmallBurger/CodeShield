@@ -288,6 +288,21 @@ body {
   opacity: 0.9;
 }
 
+.analysis-results {
+  margin-top: 24px;
+  border-top: 1px solid #333;
+  padding-top: 16px;
+}
+
+.analysis-results h3 {
+  margin-top: 1rem;
+  font-size: 1rem;
+}
+
+.analysis-results ul {
+  padding-left: 1.5rem;
+}
+
 .toast-container {
   position: fixed;
   top: 16px;
@@ -530,6 +545,107 @@ body {
 .fn-table tr:last-child td {
   border-bottom: none;
 }
+
+/* ── Detail View ─────────────────────────────────────────────────────────── */
+
+.detail-view {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.detail-back {
+  background: none;
+  border: 1px solid #444;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.detail-back:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #333;
+}
+
+.detail-header__title {
+  font-size: 1.1rem;
+  font-family: monospace;
+}
+
+.detail-header__aggregate {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.fn-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fn-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 16px;
+  border-left: 4px solid #333;
+}
+
+.fn-card:has(.risk-badge--low)      { border-left-color: var(--success); }
+.fn-card:has(.risk-badge--medium)   { border-left-color: var(--warning); }
+.fn-card:has(.risk-badge--high)     { border-left-color: #f97316; }
+.fn-card:has(.risk-badge--critical) { border-left-color: var(--error); }
+
+.fn-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.fn-card__name {
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.fn-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fn-card__line {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.fn-card__snippet {
+  margin: 0 0 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.825rem;
+}
+
+.fn-card__suggestion {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding-top: 8px;
+  border-top: 1px solid #333;
+}
+
+/* ── Risk Badges ─────────────────────────────────────────────────────────── */
 
 .risk-badge {
   font-size: 0.7rem;
