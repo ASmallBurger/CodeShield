@@ -3,6 +3,7 @@ import { analyzeFiles } from './src/analysis/parserManager.js';
 import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
 import { computeTDIReport } from './src/analysis/tdiCalculator.js';
 import { getRiskInfo } from './src/analysis/remediationAdvisor.js';
+import { exportCSV, exportPDF } from './src/export/reportExporter.js';
 
 
 // ── Constants 
@@ -27,6 +28,7 @@ const STATUS = {
 let fileQueue = []; // Array of validated file objects
 let currentView = 'summary'; // 'summary' | 'detail'
 let lastResults = [];         // cached analysis output for detail drill-down
+let lastReport = [];          // cached TDI report for export
 
 // ── DOM refs 
 const $ = (sel) => document.querySelector(sel);
@@ -46,6 +48,8 @@ const resultsSection = $('#results-section');
 const resultsList = $('#results-list');
 const resultsSummary = $('#results-summary');
 const btnCloseResults = $('#btn-close-results');
+const btnExportCSV = $('#btn-export-csv');
+const btnExportPDF = $('#btn-export-pdf');
 const toastContainer = $('#toast-container');
 
 // Settings DOM refs
@@ -588,6 +592,7 @@ btnScan.addEventListener('click', async () => {
 
         lastResults = modules; // cache for detail drill-down (story 7)
         const tdiReport = computeTDIReport(modules, currentSettings.tdiThreshold);
+        lastReport = tdiReport; // cache for export
         renderResults(tdiReport);
         wireDetailHandlers(tdiReport, modules);
         showToast('success', `Scan complete: ${tdiReport.length} file${tdiReport.length > 1 ? 's' : ''} analyzed.`);
@@ -686,6 +691,35 @@ function getFnRiskLevel(complexity) {
     if (complexity <= t * 2) return 'High';
     return 'Critical';
 }
+
+// ── Export Handlers ──
+btnExportCSV.addEventListener('click', () => {
+    if (lastReport.length === 0) {
+        showToast('warning', 'No results to export. Run a scan first.');
+        return;
+    }
+    try {
+        exportCSV(lastReport, currentSettings);
+        showToast('success', 'CSV report downloaded.');
+    } catch (err) {
+        console.error('CSV export error:', err);
+        showToast('error', `CSV export failed: ${err.message}`);
+    }
+});
+
+btnExportPDF.addEventListener('click', () => {
+    if (lastReport.length === 0) {
+        showToast('warning', 'No results to export. Run a scan first.');
+        return;
+    }
+    try {
+        exportPDF(lastReport, currentSettings);
+        showToast('success', 'PDF report downloaded.');
+    } catch (err) {
+        console.error('PDF export error:', err);
+        showToast('error', `PDF export failed: ${err.message}`);
+    }
+});
 
 // Prevent default browser file drop
 document.addEventListener('dragover', (e) => e.preventDefault());

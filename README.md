@@ -19,7 +19,7 @@
 ### Features
 - **File Upload**: Drag‑and‑drop or select source files (.py, .java, .js, .cpp). Validates file type, size, and readability.
 - **Cyclomatic Complexity Analysis**: Calculates decision points per function and aggregates complexity per file.
-- **Vulnerability Scanning**: Uses language-specific pattern matching to identify potential security issues (e.g., hardcoded secrets, dangerous functions).
+- **Vulnerability Scanning**: Uses language-specific pattern matching to identify potential security issues.
 - **Technical Debt Index (TDI) Calculation**: 
   - Computes a comprehensive TDI score based on complexity and vulnerability density.
   - Formula: `TDI = (Normalized Complexity Score * 0.5) + (Vulnerabilities per 1,000 LOC * 0.5)`
