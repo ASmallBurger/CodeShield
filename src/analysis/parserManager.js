@@ -6,12 +6,16 @@ import { parseJavaScript } from './parsers/jsParser.js';
 import { parsePython } from './parsers/pythonParser.js';
 import { parseJava } from './parsers/javaParser.js';
 import { parseCpp } from './parsers/cppParser.js';
+import { scanFile } from './securityScanner.js';
 
 const parsers = {
-  '.js': parseJavaScript,
-  '.py': parsePython,
+  '.js':   parseJavaScript,
+  '.ts':   parseJavaScript, // TypeScript — acorn handles modern syntax
+  '.jsx':  parseJavaScript,
+  '.tsx':  parseJavaScript,
+  '.py':   parsePython,
   '.java': parseJava,
-  '.cpp': parseCpp,
+  '.cpp':  parseCpp,
 };
 
 /**
@@ -22,9 +26,14 @@ export async function analyzeFiles(files) {
   const results = [];
 
   for (const f of files) {
-    const ext = f.name.slice(f.name.lastIndexOf('.'));
+    const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
     const parser = parsers[ext];
-    if (!parser) continue;
+
+    // surface unsupported extensions as an explicit result rather than silently skipping
+    if (!parser) {
+      results.push({ file: f.name, unsupported: true, functions: [], aggregate: 0, sourceLines: [] });
+      continue;
+    }
 
     const text = await f.file.text();
     let functions = [];
@@ -39,7 +48,9 @@ export async function analyzeFiles(files) {
 
     const aggregate = functions.reduce((sum, fn) => sum + (fn.complexity || 0), 0);
     // sourceLines is kept so the UI can render code snippets with context
-    results.push({ file: f.name, functions, aggregate, sourceLines: text.split(/\r?\n/) });
+    // securityFindings runs the OWASP rule set against the same source text
+    const { findings: securityFindings } = scanFile(f.name, text);
+    results.push({ file: f.name, functions, aggregate, sourceLines: text.split(/\r?\n/), securityFindings });
   }
 
   return results;
