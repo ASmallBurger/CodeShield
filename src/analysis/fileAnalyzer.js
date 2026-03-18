@@ -44,7 +44,7 @@ export async function analyzeFromPaths(filePaths) {
  * @param {string[]} extensions
  * @returns {Promise<Array>} analysis results
  */
-export async function analyzeFromDirectory(dirPath, extensions = ['.js', '.py', '.java', '.cpp']) {
+export async function analyzeFromDirectory(dirPath, extensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp']) {
   const resolvedDir = path.resolve(dirPath);
 
   if (!fs.existsSync(resolvedDir)) {
