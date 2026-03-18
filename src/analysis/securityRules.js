@@ -186,7 +186,7 @@ export const VULN_RULES = [
     severity: SEVERITY.MEDIUM,
     owasp: 'A05:2021 – Security Misconfiguration',
     description: 'Wildcard CORS policy allows any origin. Restrict to trusted domains.',
-    regex: /Access-Control-Allow-Origin\s*:\s*['"*]\*['"]?|cors\s*\(\s*\{[^}]*origin\s*:\s*['"]\*['"]/i,
+    regex: /Access-Control-Allow-Origin['"\s]*[,:][\s'"]*\*|cors\s*\(\s*\{[^}]*origin\s*:\s*['"]\*['"]/i,
     negativePatterns: [],
   },
 ];
