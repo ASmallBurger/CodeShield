@@ -869,3 +869,139 @@ body {
   border-color: var(--error);
   color: var(--error);
 }
+
+/* dashboard section */
+
+.dashboard-section {
+  margin-top: 32px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-export--dashboard {
+  background: #374151;
+  color: var(--text-primary);
+  border: 1px solid #4b5563;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-export--dashboard:hover {
+  background: #4b5563;
+}
+
+/* KPI strip */
+.dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* 2-column chart grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.chart-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1px solid #333;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px 0;
+}
+
+.chart-card canvas {
+  flex: 1;
+}
+
+.chart-card__empty {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+  margin: auto;
+  padding: 24px 0;
+}
+
+/* responsive */
+@media (max-width: 900px) {
+  .dashboard-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* print styles */
+@media print {
+  .header,
+  .main > section:not(.dashboard-section),
+  .main > .submit-area,
+  .toast-container,
+  .dashboard-actions {
+    display: none !important;
+  }
+
+  .dashboard-section {
+    display: block !important;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  .dashboard-kpis .summary-stat,
+  .chart-card {
+    background: white;
+    border-color: #ccc;
+  }
+
+  .chart-card__title,
+  .summary-stat__label {
+    color: #555;
+  }
+
+  .summary-stat__value {
+    color: black;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

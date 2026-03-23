@@ -136,6 +136,37 @@
         <div class="results-list" id="results-list"></div>
       </section>
 
+      <!-- Dashboard -->
+      <section class="dashboard-section" id="dashboard-section" style="display:none;">
+        <div class="dashboard-header">
+          <h2 class="section-title">Visual Dashboard</h2>
+          <div class="dashboard-actions">
+            <button class="btn-export btn-export--dashboard" id="btn-print-dashboard" title="Print or save as PDF">
+              Print / Save PDF
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-kpis" id="dashboard-kpis"></div>
+        <div class="dashboard-grid">
+          <div class="chart-card">
+            <h3 class="chart-card__title">TDI Distribution</h3>
+            <canvas id="chart-tdi-dist"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Top 10 High-Risk Modules</h3>
+            <canvas id="chart-top-modules"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Vulnerability Type Breakdown</h3>
+            <canvas id="chart-vuln-types"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Complexity Distribution</h3>
+            <canvas id="chart-complexity-dist"></canvas>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 

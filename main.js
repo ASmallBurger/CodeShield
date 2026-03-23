@@ -4,6 +4,7 @@ import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
 import { computeTDIReport } from './src/analysis/tdiCalculator.js';
 import { getRiskInfo } from './src/analysis/remediationAdvisor.js';
 import { exportCSV, exportPDF } from './src/export/reportExporter.js';
+import { renderDashboard, destroyDashboard } from './src/dashboard/dashboard.js';
 
 
 // ── Constants 
@@ -595,6 +596,7 @@ btnScan.addEventListener('click', async () => {
         lastReport = tdiReport; // cache for export
         renderResults(tdiReport);
         wireDetailHandlers(tdiReport, modules);
+        renderDashboard(tdiReport, modules);
         showToast('success', `Scan complete: ${tdiReport.length} file${tdiReport.length > 1 ? 's' : ''} analyzed.`);
     } catch (err) {
         console.error('CodeShield scan error:', err);
@@ -719,6 +721,17 @@ btnExportPDF.addEventListener('click', () => {
         console.error('PDF export error:', err);
         showToast('error', `PDF export failed: ${err.message}`);
     }
+});
+
+// close results
+btnCloseResults.addEventListener('click', () => {
+    resultsSection.style.display = 'none';
+    destroyDashboard();
+});
+
+// print dashboard
+document.getElementById('btn-print-dashboard').addEventListener('click', () => {
+    window.print();
 });
 
 // Prevent default browser file drop
