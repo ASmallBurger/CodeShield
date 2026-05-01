@@ -13,10 +13,10 @@ const MAX_LINES = 10_000;
 const BINARY_CHECK_SIZE = 8192; // first 8 KB
 
 const EXTENSION_LANG_MAP = {
-    '.py': { name: 'Python', cssClass: 'lang-python', icon: '' },
-    '.java': { name: 'Java', cssClass: 'lang-java', icon: '' },
-    '.js': { name: 'JavaScript', cssClass: 'lang-javascript', icon: '' },
-    '.cpp': { name: 'C++', cssClass: 'lang-cpp', icon: '' },
+    '.py': { name: 'Python', cssClass: 'lang-python' },
+    '.java': { name: 'Java', cssClass: 'lang-java' },
+    '.js': { name: 'JavaScript', cssClass: 'lang-javascript' },
+    '.cpp': { name: 'C++', cssClass: 'lang-cpp' },
 };
 
 const STATUS = {
@@ -27,7 +27,6 @@ const STATUS = {
 
 // ── State
 let fileQueue = []; // Array of validated file objects
-let currentView = 'summary'; // 'summary' | 'detail'
 let lastResults = [];         // cached analysis output for detail drill-down
 let lastReport = [];          // cached TDI report for export
 
@@ -405,7 +404,6 @@ function openDetail(module) {
 
     const detail = renderFileDetail(module);
     resultsSection.insertAdjacentElement('afterend', detail);
-    currentView = 'detail';
 
     // trigger prism highlighting once the DOM is populated
     if (window.Prism) Prism.highlightAll();
@@ -415,7 +413,6 @@ function openDetail(module) {
 function closeDetail() {
     document.querySelector('.detail-view')?.remove();
     resultsSection.style.display = '';
-    currentView = 'summary';
     resultsSection.scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -592,7 +589,7 @@ btnScan.addEventListener('click', async () => {
         }
 
         lastResults = modules; // cache for detail drill-down (story 7)
-        const tdiReport = computeTDIReport(modules, currentSettings.tdiThreshold);
+        const tdiReport = computeTDIReport(modules, currentSettings);
         lastReport = tdiReport; // cache for export
         renderResults(tdiReport);
         wireDetailHandlers(tdiReport, modules);
@@ -709,13 +706,13 @@ btnExportCSV.addEventListener('click', () => {
     }
 });
 
-btnExportPDF.addEventListener('click', () => {
+btnExportPDF.addEventListener('click', async () => {
     if (lastReport.length === 0) {
         showToast('warning', 'No results to export. Run a scan first.');
         return;
     }
     try {
-        exportPDF(lastReport, currentSettings);
+        await exportPDF(lastReport, currentSettings);
         showToast('success', 'PDF report downloaded.');
     } catch (err) {
         console.error('PDF export error:', err);
@@ -730,7 +727,7 @@ btnCloseResults.addEventListener('click', () => {
 });
 
 // print dashboard
-document.getElementById('btn-print-dashboard').addEventListener('click', () => {
+$('#btn-print-dashboard')?.addEventListener('click', () => {
     window.print();
 });
 

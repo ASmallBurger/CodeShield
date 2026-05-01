@@ -67,13 +67,23 @@ export function calculateTDI(normalizedComplexity, vulnerabilityDensity) {
  * @param {number} threshold - TDI threshold for flagging (default 50)
  * @returns {Array<{file:string, loc:number, complexityScore:number, vulnCount:number, vulnDensity:number, tdi:number, flagged:boolean, riskLevel:string, functions:Array}>}
  */
-export function computeTDIReport(modules, threshold = DEFAULT_THRESHOLD) {
+export function computeTDIReport(modules, thresholdOrSettings = DEFAULT_THRESHOLD) {
+    // Backward-compatible: accept either a number (TDI threshold only) or a settings object.
+    const settings = typeof thresholdOrSettings === 'number'
+        ? { tdiThreshold: thresholdOrSettings, vulnDensityThreshold: Infinity }
+        : {
+            tdiThreshold: thresholdOrSettings.tdiThreshold ?? DEFAULT_THRESHOLD,
+            vulnDensityThreshold: thresholdOrSettings.vulnDensityThreshold ?? Infinity,
+        };
+
     const report = modules.map((mod) => {
         const loc = calculateLOC(mod.code);
         const functionCount = mod.functions.length;
         const complexityScore = normalizeComplexity(mod.aggregate, functionCount);
         const vulnDensity = calculateVulnerabilityDensity(mod.vulnCount, loc);
         const tdi = calculateTDI(complexityScore, vulnDensity);
+
+        const flagged = tdi > settings.tdiThreshold || vulnDensity > settings.vulnDensityThreshold;
 
         return {
             file: mod.file,
@@ -84,7 +94,7 @@ export function computeTDIReport(modules, threshold = DEFAULT_THRESHOLD) {
             vulnCount: mod.vulnCount,
             vulnDensity: parseFloat(vulnDensity.toFixed(2)),
             tdi: parseFloat(tdi.toFixed(2)),
-            flagged: tdi > threshold,
+            flagged,
             riskLevel: getTDIRiskLevel(tdi),
             functions: mod.functions,
         };

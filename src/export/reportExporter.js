@@ -1,8 +1,8 @@
 // src/export/reportExporter.js
 // CSV and PDF export for CodeShield analysis reports.
 
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jspdf and jspdf-autotable are dynamically imported in exportPDF
+// to keep them out of the main bundle (~400 kB savings).
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,12 @@ export function exportCSV(report, settings) {
  * @param {Array} report - TDI report array from computeTDIReport
  * @param {object} settings - Current threshold settings
  */
-export function exportPDF(report, settings) {
+export async function exportPDF(report, settings) {
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+    ]);
+
     const timestamp = getReadableTimestamp();
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -205,7 +210,7 @@ export function exportPDF(report, settings) {
             const tdiVal = parseFloat(item.value);
             doc.setTextColor(...(tdiVal > 50 ? RED : tdiVal > 25 ? YELLOW : GREEN));
         } else if (item.label === 'High-Risk Modules') {
-            doc.setTextColor(...(parseInt(item.value) > 0 ? RED : GREEN));
+            doc.setTextColor(...(parseInt(item.value, 10) > 0 ? RED : GREEN));
         } else {
             doc.setTextColor(...TEXT_PRIMARY);
         }

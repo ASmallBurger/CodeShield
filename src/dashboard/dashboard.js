@@ -52,13 +52,13 @@ const chartInstances = [];
 // data helpers
 
 function binByScore(report, field) {
-    const bins = [0, 0, 0, 0]; // 0-25, 25-50, 50-75, 75-100
+    const bins = [0, 0, 0, 0];
     for (const r of report) {
         const v = r[field];
-        if (v <= 25)       bins[0]++;
-        else if (v <= 50)  bins[1]++;
-        else if (v <= 75)  bins[2]++;
-        else               bins[3]++;
+        if (v < 25)       bins[0]++;
+        else if (v < 50)  bins[1]++;
+        else if (v < 75)  bins[2]++;
+        else              bins[3]++;
     }
     return bins;
 }
@@ -122,12 +122,23 @@ function renderKPIs(report) {
 
 // chart builders
 
-const BIN_LABELS  = ['Low (0–25)', 'Medium (25–50)', 'High (50–75)', 'Critical (75–100)'];
+const BIN_LABELS  = ['Low', 'Medium', 'High', 'Critical'];
+const BIN_RANGES  = ['0–24', '25–49', '50–74', '75–100'];
 const BIN_COLORS  = [COLOR.success, COLOR.warning, COLOR.high, COLOR.error];
 
 const COMMON_SCALES = {
-    x: { ticks: { color: COLOR.textMuted }, grid: { color: COLOR.grid } },
+    x: {
+        ticks: { color: COLOR.textMuted, maxRotation: 0, minRotation: 0, autoSkip: false },
+        grid: { color: COLOR.grid },
+    },
     y: { ticks: { color: COLOR.textMuted, stepSize: 1 }, grid: { color: COLOR.grid }, beginAtZero: true },
+};
+
+const BIN_TOOLTIP = {
+    callbacks: {
+        title: (items) => `${BIN_LABELS[items[0].dataIndex]} (${BIN_RANGES[items[0].dataIndex]})`,
+        label: (ctx) => ` ${ctx.raw} module${ctx.raw !== 1 ? 's' : ''}`,
+    },
 };
 
 function buildTDIDistChart(report) {
@@ -150,11 +161,7 @@ function buildTDIDistChart(report) {
             responsive: true,
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => ` ${ctx.raw} module${ctx.raw !== 1 ? 's' : ''}`,
-                    },
-                },
+                tooltip: BIN_TOOLTIP,
             },
             scales: COMMON_SCALES,
         },
@@ -265,11 +272,7 @@ function buildComplexityDistChart(report) {
             responsive: true,
             plugins: {
                 legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => ` ${ctx.raw} module${ctx.raw !== 1 ? 's' : ''}`,
-                    },
-                },
+                tooltip: BIN_TOOLTIP,
             },
             scales: COMMON_SCALES,
         },
