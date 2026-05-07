@@ -37,16 +37,18 @@ export function calculateVulnerabilityDensity(vulnCount, loc) {
 
 /**
  * Normalize a complexity score to a 0-100 scale.
- * Uses a logarithmic scale: complexity of 1 = 0, complexity >= 100 = 100.
+ * Uses a linear scale: complexity of 1 = 0, complexity >= ceiling = 100.
  * @param {number} aggregateComplexity
  * @param {number} functionCount
+ * @param {number} [ceiling] - the avg complexity value that maps to 100
  * @returns {number}
  */
-export function normalizeComplexity(aggregateComplexity, functionCount) {
+export function normalizeComplexity(aggregateComplexity, functionCount, ceiling) {
     if (functionCount === 0) return 0;
+    const cap = ceiling || 20; // default keeps backward compat
     const avgComplexity = aggregateComplexity / functionCount;
-    // Scale: avg complexity of 1 => 0, avg of 20+ => 100
-    const normalized = Math.min(100, ((avgComplexity - 1) / 19) * 100);
+    // Scale: avg complexity of 1 => 0, avg of cap+ => 100
+    const normalized = Math.min(100, ((avgComplexity - 1) / (cap - 1)) * 100);
     return Math.max(0, normalized);
 }
 
@@ -67,13 +69,28 @@ export function calculateTDI(normalizedComplexity, vulnerabilityDensity) {
  * @param {number} threshold - TDI threshold for flagging (default 50)
  * @returns {Array<{file:string, loc:number, complexityScore:number, vulnCount:number, vulnDensity:number, tdi:number, flagged:boolean, riskLevel:string, functions:Array}>}
  */
-export function computeTDIReport(modules, threshold = DEFAULT_THRESHOLD) {
+export function computeTDIReport(modules, thresholdOrSettings = DEFAULT_THRESHOLD) {
+    // Backward-compatible: accept either a number (TDI threshold only) or a settings object.
+    const settings = typeof thresholdOrSettings === 'number'
+        ? { tdiThreshold: thresholdOrSettings, complexityThreshold: 10, vulnDensityThreshold: Infinity }
+        : {
+            tdiThreshold: thresholdOrSettings.tdiThreshold ?? DEFAULT_THRESHOLD,
+            complexityThreshold: thresholdOrSettings.complexityThreshold ?? 10,
+            vulnDensityThreshold: thresholdOrSettings.vulnDensityThreshold ?? Infinity,
+        };
+
+    // complexity ceiling for normalization: double the threshold so that the
+    // threshold itself sits roughly at the midpoint of the 0-100 scale
+    const complexityCeiling = settings.complexityThreshold * 2;
+
     const report = modules.map((mod) => {
         const loc = calculateLOC(mod.code);
         const functionCount = mod.functions.length;
-        const complexityScore = normalizeComplexity(mod.aggregate, functionCount);
+        const complexityScore = normalizeComplexity(mod.aggregate, functionCount, complexityCeiling);
         const vulnDensity = calculateVulnerabilityDensity(mod.vulnCount, loc);
         const tdi = calculateTDI(complexityScore, vulnDensity);
+
+        const flagged = tdi > settings.tdiThreshold || vulnDensity > settings.vulnDensityThreshold;
 
         return {
             file: mod.file,
@@ -84,8 +101,8 @@ export function computeTDIReport(modules, threshold = DEFAULT_THRESHOLD) {
             vulnCount: mod.vulnCount,
             vulnDensity: parseFloat(vulnDensity.toFixed(2)),
             tdi: parseFloat(tdi.toFixed(2)),
-            flagged: tdi > threshold,
-            riskLevel: getTDIRiskLevel(tdi),
+            flagged,
+            riskLevel: getTDIRiskLevel(tdi, settings.tdiThreshold),
             functions: mod.functions,
         };
     });
@@ -97,12 +114,16 @@ export function computeTDIReport(modules, threshold = DEFAULT_THRESHOLD) {
 
 /**
  * Get risk level string from TDI score.
+ * Bands scale around the threshold: Low < threshold*0.5, Medium < threshold,
+ * High < threshold*1.5, Critical above that.
  * @param {number} tdi
+ * @param {number} [threshold] - user-configured TDI threshold
  * @returns {string}
  */
-export function getTDIRiskLevel(tdi) {
-    if (tdi <= 25) return 'Low';
-    if (tdi <= 50) return 'Medium';
-    if (tdi <= 75) return 'High';
+export function getTDIRiskLevel(tdi, threshold) {
+    const t = threshold || DEFAULT_THRESHOLD;
+    if (tdi <= t * 0.5) return 'Low';
+    if (tdi <= t) return 'Medium';
+    if (tdi <= t * 1.5) return 'High';
     return 'Critical';
 }

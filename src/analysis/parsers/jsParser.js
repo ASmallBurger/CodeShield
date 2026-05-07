@@ -13,7 +13,37 @@ export function parseJavaScript(code /* string */, filename = '<input>') {
   });
   const results = [];
 
-  function walk(n) {
+    function inferName(parent) {
+    if (!parent) return null;
+
+    if (parent.type === 'VariableDeclarator' && parent.id && parent.id.name) {
+      return parent.id.name;
+    }
+  
+    if ((parent.type === 'Property' || parent.type === 'MethodDefinition') && parent.key) {
+      return parent.key.name || parent.key.value || null;
+    }
+
+    if (parent.type === 'AssignmentExpression' && parent.left) {
+      if (parent.left.name) return parent.left.name;
+      // obj.method = () => {}
+      if (parent.left.property) return parent.left.property.name || null;
+    }
+
+    if (parent.type === 'CallExpression') {
+      const callee = parent.callee;
+      const calleeName = callee.name || (callee.property && callee.property.name) || '';
+  
+      const firstArg = parent.arguments && parent.arguments[0];
+      if (firstArg && firstArg.type === 'Literal' && typeof firstArg.value === 'string') {
+        return calleeName ? `${calleeName}(${firstArg.value})` : firstArg.value;
+      }
+      if (calleeName) return `${calleeName} callback`;
+    }
+    return null;
+  }
+
+  function walk(n, parent) {
     if (!n || typeof n !== 'object') return;
 
     // capture function-like constructs
@@ -22,18 +52,19 @@ export function parseJavaScript(code /* string */, filename = '<input>') {
       n.type === 'FunctionExpression' ||
       n.type === 'ArrowFunctionExpression'
     ) {
-      const name = n.id ? n.id.name : '<anonymous>';
+      let name = n.id ? n.id.name : null;
+      if (!name) name = inferName(parent) || '<anonymous>';
       const complexity = calculateComplexity(n.body);
       results.push({ name, complexity, loc: n.loc });
     }
 
     for (const key of Object.keys(n)) {
       const child = n[key];
-      if (Array.isArray(child)) child.forEach(walk);
-      else walk(child);
+      if (Array.isArray(child)) child.forEach(c => walk(c, n));
+      else walk(child, n);
     }
   }
 
-  walk(ast);
+  walk(ast, null);
   return results;
 }
