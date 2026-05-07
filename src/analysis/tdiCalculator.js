@@ -92,7 +92,6 @@ export function computeTDIReport(modules, thresholdOrSettings = DEFAULT_THRESHOL
 
         const flagged = tdi > settings.tdiThreshold || vulnDensity > settings.vulnDensityThreshold;
 
-        const flagged = tdi > settings.tdiThreshold || vulnDensity > settings.vulnDensityThreshold;
 
         return {
             file: mod.file,
