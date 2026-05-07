@@ -22,7 +22,7 @@ export function parseJava(code /* string */) {
     if (braceDepth === 0) {
       const m = line.match(/(\w+)\s*\([^)]*\)\s*\{/);
       if (m) {
-        current = { name: m[1], complexity: 1, start: i + 1 };
+        current = { name: m[1], complexity: 1, startLine: i + 1 };
       }
     }
 

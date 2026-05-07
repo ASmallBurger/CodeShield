@@ -1,17 +1,21 @@
 // src/analysis/parserManager.js
-// Top-level entrypoint for analyzing a batch of files.
-// Delegates to language-specific parsers and aggregates the results.
+// top level entrypoint for analyzing a batch of files.
+// delegates to language-specific parsers and aggregates the results.
 
 import { parseJavaScript } from './parsers/jsParser.js';
 import { parsePython } from './parsers/pythonParser.js';
 import { parseJava } from './parsers/javaParser.js';
 import { parseCpp } from './parsers/cppParser.js';
+import { scanFile } from './securityScanner.js';
 
 const parsers = {
-  '.js': parseJavaScript,
-  '.py': parsePython,
+  '.js':   parseJavaScript,
+  '.ts':   parseJavaScript, // TypeScript — acorn handles modern syntax
+  '.jsx':  parseJavaScript,
+  '.tsx':  parseJavaScript,
+  '.py':   parsePython,
   '.java': parseJava,
-  '.cpp': parseCpp,
+  '.cpp':  parseCpp,
 };
 
 /**
@@ -22,23 +26,31 @@ export async function analyzeFiles(files) {
   const results = [];
 
   for (const f of files) {
-    const ext = f.name.slice(f.name.lastIndexOf('.'));
+    const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
     const parser = parsers[ext];
-    if (!parser) continue;
+
+    // surface unsupported extensions as an explicit result rather than silently skipping
+    if (!parser) {
+      results.push({ file: f.name, unsupported: true, functions: [], aggregate: 0, sourceLines: [] });
+      continue;
+    }
 
     const text = await f.file.text();
     let functions = [];
     try {
       functions = parser(text, f.name);
     } catch (err) {
-      // if parsing fails, treat whole file as one blob
+      // if parsing fails, treat whole file as one thingy
       console.warn(`parser failed for ${f.name}`, err);
       const totalPoints = countPoints(text);
       functions = [{ name: '<parse error>', complexity: totalPoints }];
     }
 
     const aggregate = functions.reduce((sum, fn) => sum + (fn.complexity || 0), 0);
-    results.push({ file: f.name, functions, aggregate });
+    // sourceLines is kept so the UI can render code snippets with context
+    // securityFindings runs the OWASP rule set against the same source text
+    const { findings: securityFindings } = scanFile(f.name, text);
+    results.push({ file: f.name, functions, aggregate, sourceLines: text.split(/\r?\n/), securityFindings });
   }
 
   return results;

@@ -2,6 +2,9 @@
 import { analyzeFiles } from './src/analysis/parserManager.js';
 import { scanVulnerabilities } from './src/analysis/vulnerabilityScanner.js';
 import { computeTDIReport } from './src/analysis/tdiCalculator.js';
+import { getRiskInfo } from './src/analysis/remediationAdvisor.js';
+import { exportCSV, exportPDF } from './src/export/reportExporter.js';
+import { renderDashboard, destroyDashboard } from './src/dashboard/dashboard.js';
 
 
 // ── Constants 
@@ -10,10 +13,10 @@ const MAX_LINES = 10_000;
 const BINARY_CHECK_SIZE = 8192; // first 8 KB
 
 const EXTENSION_LANG_MAP = {
-    '.py': { name: 'Python', cssClass: 'lang-python', icon: '' },
-    '.java': { name: 'Java', cssClass: 'lang-java', icon: '' },
-    '.js': { name: 'JavaScript', cssClass: 'lang-javascript', icon: '' },
-    '.cpp': { name: 'C++', cssClass: 'lang-cpp', icon: '' },
+    '.py': { name: 'Python', cssClass: 'lang-python' },
+    '.java': { name: 'Java', cssClass: 'lang-java' },
+    '.js': { name: 'JavaScript', cssClass: 'lang-javascript' },
+    '.cpp': { name: 'C++', cssClass: 'lang-cpp' },
 };
 
 const STATUS = {
@@ -22,8 +25,10 @@ const STATUS = {
     WARNING: 'warning',
 };
 
-// ── State 
+// ── State
 let fileQueue = []; // Array of validated file objects
+let lastResults = [];         // cached analysis output for detail drill-down
+let lastReport = [];          // cached TDI report for export
 
 // ── DOM refs 
 const $ = (sel) => document.querySelector(sel);
@@ -43,6 +48,8 @@ const resultsSection = $('#results-section');
 const resultsList = $('#results-list');
 const resultsSummary = $('#results-summary');
 const btnCloseResults = $('#btn-close-results');
+const btnExportCSV = $('#btn-export-csv');
+const btnExportPDF = $('#btn-export-pdf');
 const toastContainer = $('#toast-container');
 
 // Settings DOM refs
@@ -372,6 +379,108 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+
+// ── Detail View ───────────────────────────────────────────────────────────────
+
+// language class for prism syntax highlighting
+const PRISM_LANG = { '.js': 'javascript', '.py': 'python', '.java': 'java', '.cpp': 'cpp' };
+
+// wires click handlers onto result cards after renderResults populates the list
+function wireDetailHandlers(report, modules) {
+    resultsList.querySelectorAll('.result-card').forEach((card, i) => {
+        card.style.cursor = 'pointer';
+        const file = report[i].file;
+        card.addEventListener('click', () => {
+            const module = modules.find((m) => m.file === file);
+            if (module) openDetail(module);
+        });
+    });
+}
+
+function openDetail(module) {
+    // hide results section, show detail view in its place
+    resultsSection.style.display = 'none';
+    document.querySelector('.detail-view')?.remove();
+
+    const detail = renderFileDetail(module);
+    resultsSection.insertAdjacentElement('afterend', detail);
+
+    // trigger prism highlighting once the DOM is populated
+    if (window.Prism) Prism.highlightAll();
+    detail.scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeDetail() {
+    document.querySelector('.detail-view')?.remove();
+    resultsSection.style.display = '';
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Builds the detail view DOM element for a single file result.
+ * @param {{ file: string, functions: Array, aggregate: number, sourceLines: string[] }} fileResult
+ * @returns {HTMLElement}
+ */
+function renderFileDetail(fileResult) {
+    const ext = fileResult.file.slice(fileResult.file.lastIndexOf('.'));
+    const prismLang = PRISM_LANG[ext] || 'plaintext';
+
+    const container = document.createElement('div');
+    container.className = 'detail-view';
+
+    // back button
+    const backBtn = document.createElement('button');
+    backBtn.className = 'detail-back';
+    backBtn.textContent = '← Back to Summary';
+    backBtn.addEventListener('click', closeDetail);
+    container.appendChild(backBtn);
+
+    // file header
+    const header = document.createElement('div');
+    header.className = 'detail-header';
+    header.innerHTML = `
+        <h3 class="detail-header__title">${escapeHtml(fileResult.file)}</h3>
+        <span class="detail-header__aggregate">Total complexity: ${fileResult.aggregate}</span>`;
+    container.appendChild(header);
+
+    // one card per function
+    const cards = document.createElement('div');
+    cards.className = 'fn-cards';
+
+    fileResult.functions.forEach((fn) => {
+        const { risk, label, suggestion } = getRiskInfo(fn.complexity);
+
+        // 3 lines of context: one before the function def, the def line, one after
+        let snippetHtml = '';
+        if (fn.startLine && fileResult.sourceLines) {
+            const sl = fileResult.sourceLines;
+            const from = Math.max(0, fn.startLine - 2); // clamp to start of file
+            const to   = Math.min(sl.length, fn.startLine + 1);
+            const snippet = sl.slice(from, to)
+                .map((line, i) => `${from + i + 1}: ${line}`)
+                .join('\n');
+            snippetHtml = `<pre class="fn-card__snippet"><code class="language-${prismLang}">${escapeHtml(snippet)}</code></pre>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'fn-card';
+        card.innerHTML = `
+            <div class="fn-card__header">
+                <span class="fn-card__name">${escapeHtml(fn.name)}</span>
+                <div class="fn-card__meta">
+                    <span class="fn-card__line">${fn.startLine ? `Line ${fn.startLine}` : '—'}</span>
+                    <span class="risk-badge risk-badge--${label}">${risk} · ${fn.complexity}</span>
+                </div>
+            </div>
+            ${snippetHtml}
+            <div class="fn-card__suggestion">${escapeHtml(suggestion)}</div>`;
+        cards.appendChild(card);
+    });
+
+    container.appendChild(cards);
+    return container;
+}
+
 // Toast System
 
 function showToast(type, message) {
@@ -479,8 +588,12 @@ btnScan.addEventListener('click', async () => {
             });
         }
 
-        const tdiReport = computeTDIReport(modules, currentSettings.tdiThreshold);
+        lastResults = modules; // cache for detail drill-down (story 7)
+        const tdiReport = computeTDIReport(modules, currentSettings);
+        lastReport = tdiReport; // cache for export
         renderResults(tdiReport);
+        wireDetailHandlers(tdiReport, modules);
+        renderDashboard(tdiReport, modules);
         showToast('success', `Scan complete: ${tdiReport.length} file${tdiReport.length > 1 ? 's' : ''} analyzed.`);
     } catch (err) {
         console.error('CodeShield scan error:', err);
@@ -577,6 +690,46 @@ function getFnRiskLevel(complexity) {
     if (complexity <= t * 2) return 'High';
     return 'Critical';
 }
+
+// ── Export Handlers ──
+btnExportCSV.addEventListener('click', () => {
+    if (lastReport.length === 0) {
+        showToast('warning', 'No results to export. Run a scan first.');
+        return;
+    }
+    try {
+        exportCSV(lastReport, currentSettings);
+        showToast('success', 'CSV report downloaded.');
+    } catch (err) {
+        console.error('CSV export error:', err);
+        showToast('error', `CSV export failed: ${err.message}`);
+    }
+});
+
+btnExportPDF.addEventListener('click', async () => {
+    if (lastReport.length === 0) {
+        showToast('warning', 'No results to export. Run a scan first.');
+        return;
+    }
+    try {
+        await exportPDF(lastReport, currentSettings);
+        showToast('success', 'PDF report downloaded.');
+    } catch (err) {
+        console.error('PDF export error:', err);
+        showToast('error', `PDF export failed: ${err.message}`);
+    }
+});
+
+// close results
+btnCloseResults.addEventListener('click', () => {
+    resultsSection.style.display = 'none';
+    destroyDashboard();
+});
+
+// print dashboard
+$('#btn-print-dashboard')?.addEventListener('click', () => {
+    window.print();
+});
 
 // Prevent default browser file drop
 document.addEventListener('dragover', (e) => e.preventDefault());
